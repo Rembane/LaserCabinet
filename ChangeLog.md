@@ -1,0 +1,5 @@
+# Revision history for FileIndexer
+
+## 0.0.1.0  -- 2017-03-13
+
+* First version. Released on an unsuspecting world.
