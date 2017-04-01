@@ -23,6 +23,7 @@ executable FileIndexer
                        bytestring,
                        directory,
                        filepath,
+                       mmap,
                        mtl,
                        sqlite-simple,
                        unix,

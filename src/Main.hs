@@ -7,8 +7,7 @@ import Control.Exception (bracket, tryJust)
 import Control.Monad
 import Control.Monad.Reader (ReaderT, asks, runReaderT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import qualified Data.ByteString.Lazy as L
-import Data.Digest.XXHash (xxHash)
+import Data.Digest.XXHash (xxHash')
 import Data.Monoid ((<>))
 import Database.SQLite.Simple
 import Database.SQLite.Simple.FromRow
@@ -17,6 +16,7 @@ import System.Environment (getArgs)
 import System.FilePath ((</>), takeFileName)
 import System.IO (FilePath)
 import System.IO.Error (isDoesNotExistError)
+import System.IO.MMap (mmapFileByteString)
 import System.Posix (getFileStatus, isDirectory, isRegularFile)
 
 -- Primary key, Absolute path to file, filename, xxhash
@@ -35,7 +35,7 @@ type Indexer m = ReaderT Stuff m
 
 hashIt :: (MonadIO m) => FilePath -> Indexer m ()
 hashIt p = do
-    hash <- liftIO ((show . xxHash) <$> L.readFile p)
+    hash <- liftIO ((show . xxHash') <$> mmapFileByteString p Nothing)
     conn <- asks dbConn
     liftIO $ putStrLn $ "File: " <> p <> " HASH: " <> hash
     liftIO $ execute conn "INSERT INTO file_index (path, fn, hash) VALUES (?,?,?)" (p, takeFileName p, hash)
@@ -55,6 +55,10 @@ runner path = do
         | isRegularFile fStatus = hashIt fn
         | isDirectory   fStatus = runner fn
         | otherwise             = liftIO $ putStrLn "This file isn't anything, strange eh?"
+
+-- TODO:
+--   * Add hostname to the file table.
+--   * Add one table for hashes, one table for files and one table to connect them.
 
 main :: IO ()
 main = do
